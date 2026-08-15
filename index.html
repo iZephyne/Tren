@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Türkiye Demiryolu Rota</title>
+<title>Türkiye Demiryolu Rota & GPS Takip</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -18,6 +18,7 @@
     --rail:     #F5C518;
     --station:  #00B4D8;
     --route:    #FF4D4D;
+    --gps:      #00FF88;
     --text:     #E8F0F7;
     --muted:    #6B8CA8;
     --mono:     'Share Tech Mono', monospace;
@@ -123,7 +124,7 @@
     margin-left: 6px;
   }
 
-  /* ── Button ── */
+  /* ── Buttons ── */
   .btn-route {
     width: 100%;
     background: var(--rail);
@@ -137,7 +138,7 @@
     letter-spacing: 1px;
     cursor: pointer;
     text-transform: uppercase;
-    transition: opacity .2s;
+    transition: opacity .2s, background .2s;
     margin-top: 4px;
   }
   .btn-route:hover { opacity: .85; }
@@ -169,6 +170,7 @@
   }
   .status-msg.error { color: #FF6B6B; }
   .status-msg.success { color: #4ECDC4; }
+  .status-msg.gps { color: var(--gps); }
 
   .route-stats { display: flex; flex-direction: column; gap: 10px; }
   .stat-box {
@@ -189,6 +191,9 @@
     font-family: var(--mono);
     font-size: 22px;
     color: var(--rail);
+  }
+  .stat-value.live {
+    color: var(--gps);
   }
   .stat-unit { font-size: 12px; color: var(--muted); margin-left: 3px; }
 
@@ -266,7 +271,7 @@
 
     <div class="logo">
       <div class="logo-tag">TCDD · Demiryolu</div>
-      <div class="logo-title">Rota Planlayıcı</div>
+      <div class="logo-title">Rota Planlayıcı & GPS</div>
       <div class="logo-sub">Gerçek demiryolu verisi · Türkiye</div>
     </div>
 
@@ -292,26 +297,38 @@
       </div>
 
       <button class="btn-route" id="btnRoute" disabled>Rotayı Göster</button>
-      <button class="btn-clear" id="btnClear">Temizle</button>
+      <button class="btn-clear" id="btnClear">Seçimleri Temizle</button>
+      <button class="btn-route" id="btnGps" style="background:var(--gps); color:#0D1B2A; margin-top:10px;">GPS & Hız Ölçer Başlat</button>
     </div>
 
     <div class="info-panel">
       <div class="loading-bar" id="loadingBar"><div class="loading-bar-fill"></div></div>
       <div class="status-msg" id="statusMsg">Harita yükleniyor, istasyonlar alınıyor…</div>
+      
       <div class="route-stats" id="routeStats" style="display:none">
+        <!-- Rota Bilgileri -->
         <div class="stat-box">
-          <div class="stat-label">Mesafe</div>
+          <div class="stat-label">Toplam Mesafe</div>
           <div class="stat-value" id="statDist">—<span class="stat-unit">km</span></div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Tahmini Süre</div>
+          <div class="stat-label">Tahmini Süre (Sabit 120km/h)</div>
           <div class="stat-value" id="statTime">—<span class="stat-unit">dk</span></div>
         </div>
-        <div class="stat-box">
-          <div class="stat-label">Hat Tipi</div>
-          <div class="stat-value" id="statType" style="font-size:14px;padding-top:4px">—</div>
+      </div>
+      
+      <!-- GPS Canlı Veriler (Sonradan Belirir) -->
+      <div class="route-stats" style="margin-top: 10px;">
+        <div class="stat-box" id="boxSpeed" style="display:none; border-color:var(--gps);">
+          <div class="stat-label" style="color:var(--gps)">Anlık Hız</div>
+          <div class="stat-value live" id="statSpeed">0<span class="stat-unit" style="color:var(--gps)">km/h</span></div>
+        </div>
+        <div class="stat-box" id="boxRemTime" style="display:none; border-color:var(--gps);">
+          <div class="stat-label" style="color:var(--gps)">Canlı Kalan Süre</div>
+          <div class="stat-value live" id="statRemTime">—</div>
         </div>
       </div>
+
     </div>
 
     <div class="legend">
@@ -328,6 +345,10 @@
         <div class="legend-item">
           <div class="legend-line" style="background:#00B4D8; height:3px; border-radius:50%; width:10px; height:10px;"></div>
           <span>İstasyon</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-line" style="background:#00FF88; height:3px; border-radius:50%; width:10px; height:10px; box-shadow: 0 0 5px #00FF88;"></div>
+          <span>Canlı Konum</span>
         </div>
       </div>
     </div>
@@ -359,16 +380,28 @@ let stations       = [];   // [{name, lat, lng, node_id}]
 let stationMarkers = [];
 let railLayers     = [];
 let routeLayer     = null;
+let currentPath    = [];   // Rotanın koordinat dizisi
 let markerA        = null;
 let markerB        = null;
 let selectedA      = null;
 let selectedB      = null;
+
+// GPS States
+let gpsWatchId = null;
+let userMarker = null;
+let lastPos = null;
+let lastTime = null;
+let currentSpeedKmh = 0;
 
 const statusEl   = document.getElementById('statusMsg');
 const loadingEl  = document.getElementById('loadingBar');
 const statsEl    = document.getElementById('routeStats');
 const btnRoute   = document.getElementById('btnRoute');
 const btnClear   = document.getElementById('btnClear');
+
+const btnGps     = document.getElementById('btnGps');
+const boxSpeed   = document.getElementById('boxSpeed');
+const boxRemTime = document.getElementById('boxRemTime');
 
 // ── Helpers ───────────────────────────────────────────────────────
 function setStatus(msg, type='') {
@@ -483,7 +516,6 @@ async function loadStations() {
       }
     });
 
-    // Sort alphabetically for autocomplete
     stations.sort((a,b) => a.name.localeCompare(b.name, 'tr'));
 
     drawStationDots();
@@ -568,9 +600,7 @@ function checkReady() {
 }
 
 // ── Route finding ─────────────────────────────────────────────────
-// Build a graph from railway segments, then BFS/Dijkstra to find path
 function buildGraph() {
-  // nodes: key="lat,lng" -> [{key, dist}]
   const graph = new Map();
   const keyOf = ([lat,lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`;
 
@@ -592,7 +622,6 @@ function buildGraph() {
 }
 
 function nearestNode(point) {
-  // find nearest coord in all rail segments
   let best = null, bestD = Infinity;
   railwayLines.forEach(line => {
     line.coords.forEach(c => {
@@ -610,8 +639,6 @@ function dijkstra(graph, keyOf, startCoord, endCoord) {
   const dist  = new Map();
   const prev  = new Map();
   const visited = new Set();
-
-  // Min-heap via sorted array (simple for this size)
   const queue = [{ key:startKey, d:0, coord:startCoord }];
   dist.set(startKey, 0);
 
@@ -626,118 +653,4 @@ function dijkstra(graph, keyOf, startCoord, endCoord) {
     if (key === endKey) break;
 
     const neighbors = graph.get(key) || [];
-    for (const nb of neighbors) {
-      if (visited.has(nb.key)) continue;
-      const nd = d + nb.dist;
-      if (!dist.has(nb.key) || nd < dist.get(nb.key)) {
-        dist.set(nb.key, nd);
-        prev.set(nb.key, { key, coord });
-        queue.push({ key:nb.key, d:nd, coord:nb.coord });
-      }
-    }
-  }
-
-  // Reconstruct path
-  const path = [];
-  let cur = endKey;
-  while (cur && prev.has(cur)) {
-    const p = prev.get(cur);
-    path.unshift(p.coord);
-    cur = p.key;
-  }
-  if (path.length) path.push(endCoord);
-  return { path, totalDist: dist.get(endKey) || 0 };
-}
-
-// ── Draw route ────────────────────────────────────────────────────
-function drawRoute() {
-  if (!selectedA || !selectedB) return;
-  if (routeLayer) map.removeLayer(routeLayer);
-  statsEl.style.display = 'none';
-  setLoading(true);
-  setStatus('Rota hesaplanıyor…');
-
-  setTimeout(() => {
-    try {
-      const { graph, keyOf } = buildGraph();
-
-      const nodeA = nearestNode([selectedA.lat, selectedA.lng]);
-      const nodeB = nearestNode([selectedB.lat, selectedB.lng]);
-
-      if (!nodeA || !nodeB) {
-        setStatus('Yakın demiryolu noktası bulunamadı.', 'error');
-        setLoading(false); return;
-      }
-
-      const { path, totalDist } = dijkstra(graph, keyOf, nodeA, nodeB);
-
-      if (!path.length) {
-        setStatus('Bu iki istasyon arasında bağlantılı hat bulunamadı.', 'error');
-        setLoading(false); return;
-      }
-
-      routeLayer = L.polyline(path, {
-        color: '#FF4D4D', weight: 5, opacity: .9,
-        lineJoin:'round', lineCap:'round',
-        dashArray: null
-      }).addTo(map);
-
-      // Animated highlight
-      routeLayer.setStyle({ opacity:0 });
-      let op = 0;
-      const fadeIn = setInterval(() => {
-        op += 0.1;
-        routeLayer.setStyle({ opacity: Math.min(op, 0.9) });
-        if (op >= 0.9) clearInterval(fadeIn);
-      }, 30);
-
-      const bounds = L.latLngBounds(
-        [selectedA.lat, selectedA.lng],
-        [selectedB.lat, selectedB.lng]
-      ).extend(path);
-      map.fitBounds(bounds, { padding:[40,40] });
-
-      const km = Math.round(totalDist);
-      const speedKmh = 120;
-      const mins = Math.round((km / speedKmh) * 60);
-
-      document.getElementById('statDist').innerHTML = `${km}<span class="stat-unit">km</span>`;
-      document.getElementById('statTime').innerHTML = mins > 60
-        ? `${Math.floor(mins/60)}s ${mins%60}dk`
-        : `${mins}<span class="stat-unit">dk</span>`;
-      document.getElementById('statType').textContent = km > 300 ? 'Uzun Mesafe' : 'Bölgesel Hat';
-      statsEl.style.display = 'flex';
-
-      setLoading(false);
-      setStatus(`${selectedA.name} → ${selectedB.name} · ${km} km`, 'success');
-    } catch(e) {
-      setLoading(false);
-      setStatus('Rota hesaplama hatası: ' + e.message, 'error');
-    }
-  }, 50);
-}
-
-// ── Clear ─────────────────────────────────────────────────────────
-function clearAll() {
-  if (markerA) { map.removeLayer(markerA); markerA = null; }
-  if (markerB) { map.removeLayer(markerB); markerB = null; }
-  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
-  selectedA = selectedB = null;
-  document.getElementById('inputA').value = '';
-  document.getElementById('inputB').value = '';
-  statsEl.style.display = 'none';
-  btnRoute.disabled = true;
-  setStatus(`${stations.length} istasyon yüklendi. Kalkış ve varış seçin.`, 'success');
-}
-
-// ── Wire up ───────────────────────────────────────────────────────
-setupAutocomplete('inputA', 'listA', st => { pinA(st); map.setView([st.lat, st.lng], 8); });
-setupAutocomplete('inputB', 'listB', st => { pinB(st); });
-btnRoute.addEventListener('click', drawRoute);
-btnClear.addEventListener('click', clearAll);
-
-// ── Start ─────────────────────────────────────────────────────────
-loadRailways();
-</script>
-</body>
-</html>
+    for (const nb of nei
