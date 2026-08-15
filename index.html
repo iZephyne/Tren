@@ -7,222 +7,116 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg:      #0D1B2A;
-  --panel:   #111F30;
-  --border:  #1E3A52;
-  --rail:    #F5C518;
-  --station: #00B4D8;
-  --route:   #FF4D4D;
-  --gps:     #00FF88;
-  --text:    #E8F0F7;
-  --muted:   #6B8CA8;
-  --mono:    'Share Tech Mono', monospace;
-  --sans:    'Inter', sans-serif;
-}
-
-html, body {
-  height: 100%; width: 100%;
-  background: var(--bg); color: var(--text);
-  font-family: var(--sans);
-  overflow: hidden;
-}
-
-/* ── Shell ── */
-.shell {
-  display: flex; flex-direction: column;
-  width: 100vw; height: 100vh; height: 100dvh;
-  overflow: hidden;
-}
-
-/* ── Sidebar ── */
-.sidebar {
-  flex: 0 0 auto;
-  max-height: 52vh;
-  background: var(--panel);
-  border-bottom: 2px solid var(--border);
-  display: flex; flex-direction: column;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  z-index: 10;
-}
-
-.logo {
-  padding: 12px 18px 9px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  position: sticky; top: 0;
-  background: var(--panel);
-  z-index: 2;
-}
-.logo-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 3px; color: var(--rail); text-transform: uppercase; margin-bottom: 3px; }
-.logo-title { font-size: 17px; font-weight: 600; }
-.logo-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
-
-/* ── Sections ── */
-.section { padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.section-label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; }
-
-.station-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.dot-a { background: var(--station); box-shadow: 0 0 6px var(--station); }
-.dot-b { background: var(--route); box-shadow: 0 0 6px var(--route); }
-
-.station-input-wrap { position: relative; flex: 1; }
-.station-input {
-  width: 100%; background: var(--bg);
-  border: 1px solid var(--border); border-radius: 6px;
-  padding: 9px 12px; font-size: 14px; color: var(--text);
-  outline: none; transition: border-color .2s;
-  -webkit-appearance: none; font-family: var(--sans);
-}
-.station-input:focus { border-color: var(--station); }
-
-.autocomplete-list {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-  background: #162536; border: 1px solid var(--border); border-radius: 6px;
-  z-index: 99999; max-height: 170px; overflow-y: auto;
-  display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.65);
-  -webkit-overflow-scrolling: touch;
-}
-.autocomplete-list.open { display: block; }
-.autocomplete-item {
-  padding: 10px 12px; font-size: 13px; cursor: pointer;
-  border-bottom: 1px solid var(--border);
-  -webkit-tap-highlight-color: transparent;
-  transition: background .1s;
-}
-.autocomplete-item:last-child { border-bottom: none; }
-.autocomplete-item:hover, .autocomplete-item.active { background: var(--border); }
-
-/* ── Buttons ── */
-.btn {
-  width: 100%; border: none; border-radius: 6px;
-  padding: 11px; font-size: 13px; font-weight: 600;
-  font-family: var(--mono); letter-spacing: 1px;
-  cursor: pointer; text-transform: uppercase;
-  transition: opacity .2s, transform .1s, filter .2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-.btn:active { transform: scale(0.97); }
-
-.btn-primary { background: var(--rail); color: #0D1B2A; margin-top: 6px; }
-.btn-primary:disabled { opacity: .3; cursor: not-allowed; transform: none; }
-
-.btn-gps { background: var(--gps); color: #0D1B2A; margin-top: 8px; }
-.btn-gps.active { background: #FF4D4D; color: #fff; }
-
-.btn-outline {
-  background: transparent; color: var(--muted);
-  border: 1px solid var(--border); margin-top: 6px;
-  padding: 9px; font-size: 12px;
-  transition: color .2s, border-color .2s, transform .1s;
-}
-.btn-outline:hover, .btn-outline:active { color: var(--text); border-color: var(--muted); }
-
-.btn-retry {
-  background: transparent; border: 1px solid #FF6B6B;
-  color: #FF6B6B; border-radius: 6px;
-  padding: 7px 14px; font-size: 12px; cursor: pointer;
-  margin-top: 6px; display: none; touch-action: manipulation;
-  font-family: var(--sans);
-}
-.btn-retry.show { display: inline-block; }
-.btn-retry:hover { background: rgba(255,107,107,.1); }
-
-/* ── Info panel ── */
-.info-panel { padding: 12px 18px 14px; flex-shrink: 0; }
-
-.status-msg {
-  font-size: 12px; color: var(--muted);
-  line-height: 1.65; margin-bottom: 10px;
-  word-break: break-word; min-height: 20px;
-}
-.status-msg.error   { color: #FF6B6B; font-weight: 600; }
-.status-msg.success { color: #4ECDC4; }
-.status-msg.gps     { color: var(--gps); }
-.status-msg.warn    { color: #F5C518; }
-
-/* Loading bar */
-.loading-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; margin-bottom: 10px; display: none; }
-.loading-bar.active { display: block; }
-.loading-bar-fill { height: 100%; background: var(--rail); animation: loadpulse 1.4s ease-in-out infinite; }
-@keyframes loadpulse { 0%{margin-left:-55%;width:55%} 100%{margin-left:110%;width:55%} }
-
-/* Stats grid */
-.stats-row { display: flex; gap: 7px; margin-bottom: 8px; }
-.stat-box {
-  flex: 1; min-width: 80px;
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 11px;
-}
-.stat-label { font-family: var(--mono); font-size: 8px; letter-spacing: 1.8px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
-.stat-value { font-family: var(--mono); font-size: 21px; color: var(--rail); line-height: 1; }
-.stat-value.live { color: var(--gps); }
-.stat-unit { font-size: 10px; color: var(--muted); margin-left: 2px; }
-.stat-unit.gps { color: var(--gps); }
-.stat-box.gps-box { border-color: var(--gps); }
-
-/* ── Map ── */
-#map {
-  flex: 1 1 0;
-  min-height: 38vh;
-  width: 100%;
-  background: #0a1520;
-  z-index: 1;
-}
-
-/* Map overlay controls */
-.map-btns {
-  position: absolute;
-  bottom: 18px; right: 10px;
-  z-index: 1000;
-  display: flex; flex-direction: column; gap: 6px;
-}
-.map-btn {
-  width: 38px; height: 38px;
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: 8px; color: var(--text); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.6);
-  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  transition: background .15s;
-}
-.map-btn:hover { background: var(--border); }
-
-/* Leaflet dark theme */
-.leaflet-tile { filter: brightness(0.52) saturate(0.35) hue-rotate(192deg); }
-.leaflet-control-zoom a { background: var(--panel) !important; color: var(--text) !important; border-color: var(--border) !important; }
-.leaflet-popup-content-wrapper { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.6); }
-.leaflet-popup-tip { background: var(--panel); }
-.leaflet-popup-content { margin: 10px 14px; font-size: 13px; }
-
-/* GPS pulse */
-@keyframes gpsPulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(0,255,136,.7); }
-  60% { box-shadow: 0 0 0 14px rgba(0,255,136,0); }
-}
-.gps-dot { animation: gpsPulse 1.8s ease-in-out infinite; }
-
-/* ── Desktop layout ── */
-@media (min-width: 600px) {
-  .shell { flex-direction: row; }
-  .sidebar {
-    width: 300px; flex: 0 0 300px;
-    max-height: 100vh; height: 100%;
-    border-right: 2px solid var(--border); border-bottom: none;
+  :root {
+    --bg:       #0D1B2A;
+    --panel:    #111F30;
+    --border:   #1E3A52;
+    --rail:     #F5C518;
+    --station:  #00B4D8;
+    --route:    #FF4D4D;
+    --gps:      #00FF88;
+    --text:     #E8F0F7;
+    --muted:    #6B8CA8;
+    --mono:     'Share Tech Mono', monospace;
+    --sans:     'Inter', sans-serif;
   }
-  #map { height: 100%; min-height: unset; }
-}
-@media (min-width: 800px) {
-  .sidebar { width: 320px; flex: 0 0 320px; }
-}
+
+  html, body { 
+    height: 100%; width: 100%; 
+    background: var(--bg); color: var(--text); 
+    font-family: var(--sans); overflow: hidden; 
+  }
+
+  /* ── Layout ── */
+  .shell { 
+    display: flex; flex-direction: column;
+    width: 100vw; height: 100vh; height: 100dvh; 
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    flex: 0 0 auto;
+    height: 50%;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+    z-index: 10;
+  }
+
+  .logo { padding: 15px 20px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .logo-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--rail); text-transform: uppercase; margin-bottom: 4px; }
+  .logo-title { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Search boxes ── */
+  .section { padding: 15px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .section-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; }
+
+  .station-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-a { background: var(--station); }
+  .dot-b { background: var(--route); }
+
+  .station-input-wrap { position: relative; flex: 1; }
+  .station-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-size: 13px; color: var(--text); outline: none; transition: border-color .2s; }
+  .station-input:focus { border-color: var(--station); }
+  
+  .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #162536; border: 1px solid var(--border); border-radius: 6px; z-index: 99999; max-height: 150px; overflow-y: auto; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+  .autocomplete-list.open { display: block; }
+  .autocomplete-item { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .autocomplete-item:hover { background: var(--border); }
+
+  /* ── Buttons ── */
+  .btn-route { width: 100%; background: var(--rail); color: #0D1B2A; border: none; border-radius: 6px; padding: 11px; font-size: 13px; font-weight: 600; font-family: var(--mono); letter-spacing: 1px; cursor: pointer; text-transform: uppercase; margin-top: 4px; transition: opacity .2s; }
+  .btn-route:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-clear { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 12px; cursor: pointer; margin-top: 6px; transition: color .2s, border-color .2s; }
+  .btn-clear:hover { color: var(--text); border-color: var(--muted); }
+
+  /* ── Info panel ── */
+  .info-panel { padding: 15px 20px; flex-shrink: 0; }
+  .status-msg { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; word-wrap: break-word; }
+  .status-msg.error { color: #FF6B6B; font-weight: bold; }
+  .status-msg.success { color: #4ECDC4; }
+  .status-msg.gps { color: var(--gps); }
+
+  .route-stats { display: flex; flex-direction: column; gap: 8px; }
+  .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .stat-value { font-family: var(--mono); font-size: 20px; color: var(--rail); }
+  .stat-value.live { color: var(--gps); }
+  .stat-unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
+
+  /* ── Loading bar ── */
+  .loading-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; margin-bottom: 12px; display: none; }
+  .loading-bar.active { display: block; }
+  .loading-bar-fill { height: 100%; background: var(--rail); width: 0%; animation: loading 1.5s ease-in-out infinite; }
+  @keyframes loading { 0% { width: 0%; margin-left: 0; } 50% { width: 70%; margin-left: 15%; } 100% { width: 0%; margin-left: 100%; } }
+
+  /* ── Map ── */
+  #map { 
+    flex: 1 1 auto; 
+    height: 50%; 
+    width: 100%; 
+    background: #0a1520; 
+    z-index: 1; 
+  }
+
+  /* Leaflet dark override */
+  .leaflet-tile { filter: brightness(0.55) saturate(0.4) hue-rotate(190deg); }
+  .leaflet-control-zoom a { background: var(--panel) !important; color: var(--text) !important; border-color: var(--border) !important; }
+
+  /* ── Desktop View ── */
+  @media (min-width: 601px) {
+    .shell { flex-direction: row; }
+    .sidebar { width: 320px; height: 100%; flex: 0 0 320px; border-right: 1px solid var(--border); border-bottom: none; }
+    #map { height: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -232,309 +126,369 @@ html, body {
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-tag">TCDD · Demiryolu</div>
-      <div class="logo-title">Rota Planlayıcı &amp; GPS</div>
-      <div class="logo-sub">Gerçek OSM verisi &middot; Türkiye</div>
+      <div class="logo-title">Rota Planlayıcı & GPS</div>
+      <div class="logo-sub">Gerçek demiryolu verisi · Türkiye</div>
     </div>
 
     <div class="section">
-      <div class="section-label">Güzergah</div>
+      <div class="section-label">Güzergah Seç</div>
       <div class="station-row">
         <div class="dot dot-a"></div>
         <div class="station-input-wrap">
-          <input class="station-input" id="inputA" type="text"
-            placeholder="Kalkış istasyonu…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+          <input class="station-input" id="inputA" type="text" placeholder="Kalkış istasyonu..." autocomplete="off"/>
           <div class="autocomplete-list" id="listA"></div>
         </div>
       </div>
       <div class="station-row">
         <div class="dot dot-b"></div>
         <div class="station-input-wrap">
-          <input class="station-input" id="inputB" type="text"
-            placeholder="Varış istasyonu…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+          <input class="station-input" id="inputB" type="text" placeholder="Varış istasyonu..." autocomplete="off"/>
           <div class="autocomplete-list" id="listB"></div>
         </div>
       </div>
-      <button class="btn btn-primary" id="btnRoute" disabled>Rotayı Göster</button>
-      <button class="btn btn-outline" id="btnClear">Seçimi Temizle</button>
-      <button class="btn btn-gps" id="btnGps">📍 GPS &amp; Hız Ölçer</button>
+      <button class="btn-route" id="btnRoute" disabled>Rotayı Göster</button>
+      <button class="btn-clear" id="btnClear">Seçimleri Temizle</button>
+      <button class="btn-route" id="btnGps" style="background:var(--gps); color:#0D1B2A; margin-top:10px;">GPS & Hız Ölçer Başlat</button>
     </div>
 
     <div class="info-panel">
       <div class="loading-bar" id="loadingBar"><div class="loading-bar-fill"></div></div>
-      <div class="status-msg" id="statusMsg">Harita altyapısı başlatılıyor…</div>
-      <button class="btn-retry" id="btnRetry">↻ Yeniden Dene</button>
-
-      <!-- Rota istatistikleri -->
-      <div id="routeStats" style="display:none">
-        <div class="stats-row">
-          <div class="stat-box">
-            <div class="stat-label">Mesafe</div>
-            <div class="stat-value" id="statDist">—</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Tahmini Süre</div>
-            <div class="stat-value" id="statTime">—</div>
-          </div>
+      <div class="status-msg" id="statusMsg">Harita altyapısı hazırlanıyor...</div>
+      
+      <div class="route-stats" id="routeStats" style="display:none">
+        <div class="stat-box">
+          <div class="stat-label">Toplam Mesafe</div>
+          <div class="stat-value" id="statDist">—<span class="stat-unit">km</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Tahmini Süre (120km/h)</div>
+          <div class="stat-value" id="statTime">—<span class="stat-unit">dk</span></div>
         </div>
       </div>
-
-      <!-- GPS canlı istatistikleri -->
-      <div id="gpsStats" style="display:none">
-        <div class="stats-row">
-          <div class="stat-box gps-box">
-            <div class="stat-label" style="color:var(--gps)">Anlık Hız</div>
-            <div class="stat-value live" id="statSpeed">0<span class="stat-unit gps">km/h</span></div>
-          </div>
-          <div class="stat-box gps-box" id="boxRemTime" style="display:none">
-            <div class="stat-label" style="color:var(--gps)">Kalan Süre</div>
-            <div class="stat-value live" id="statRemTime">—</div>
-          </div>
+      
+      <!-- GPS Canlı Veriler -->
+      <div class="route-stats" style="margin-top: 10px;">
+        <div class="stat-box" id="boxSpeed" style="display:none; border-color:var(--gps);">
+          <div class="stat-label" style="color:var(--gps)">Anlık Hız</div>
+          <div class="stat-value live" id="statSpeed">0<span class="stat-unit" style="color:var(--gps)">km/h</span></div>
         </div>
-        <div class="stats-row" id="gpsCoordRow" style="display:none">
-          <div class="stat-box" style="flex:2">
-            <div class="stat-label">Konum</div>
-            <div class="stat-value" id="statCoord" style="font-size:11px;color:var(--muted)">—</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Doğruluk</div>
-            <div class="stat-value" id="statAccuracy" style="font-size:15px">—</div>
-          </div>
+        <div class="stat-box" id="boxRemTime" style="display:none; border-color:var(--gps);">
+          <div class="stat-label" style="color:var(--gps)">Canlı Kalan Süre</div>
+          <div class="stat-value live" id="statRemTime">—</div>
         </div>
       </div>
     </div>
   </aside>
 
   <!-- MAP -->
-  <div id="map">
-    <div class="map-btns">
-      <button class="map-btn" id="btnFitRoute" title="Rotayı Ortala" style="display:none">⊕</button>
-      <button class="map-btn" id="btnLocate"   title="Konumuma Git">📍</button>
-      <button class="map-btn" id="btnFitTurkey" title="Türkiye'ye Dön">🗺</button>
-    </div>
-  </div>
+  <div id="map"></div>
 
 </div>
 
 <script>
-'use strict';
-
-/* ─── Global hata yakalayıcı ─────────────────────────────────────── */
-window.onerror = function(msg, src, line, col, err) {
-  var el = document.getElementById('statusMsg');
-  if (el) { el.textContent = 'HATA: ' + msg; el.className = 'status-msg error'; }
-  console.error('[Demiryolu Hata]', msg, err);
+// --- Global Hata Yakalayıcı ---
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+  const el = document.getElementById('statusMsg');
+  if(el) {
+    el.textContent = "SİSTEM HATASI: " + msg;
+    el.className = 'status-msg error';
+  }
   return false;
 };
 
-document.addEventListener('DOMContentLoaded', function() {
-
-  /* Leaflet kontrolü */
+document.addEventListener("DOMContentLoaded", function() {
   if (typeof L === 'undefined') {
-    document.getElementById('statusMsg').textContent =
-      'Harita kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenileyin.';
-    document.getElementById('statusMsg').className = 'status-msg error';
+    const el = document.getElementById('statusMsg');
+    el.textContent = "Kritik Hata: Harita kütüphanesi yüklenemedi. Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.";
+    el.className = 'status-msg error';
     return;
   }
 
-  /* ── Harita başlatma ─────────────────────────────────────────────── */
-  var map = L.map('map', {
+  // ── Map init ──────────────────────────────────────────────────────
+  const map = L.map('map', {
     center: [39.0, 35.5],
-    zoom: 6,
+    zoom: 5, 
     zoomControl: true,
-    attributionControl: true
+    attributionControl: false
   });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+    maxZoom: 18
   }).addTo(map);
 
-  /* Harita boyutunu düzelt (flex layout + ekran dönmesi) */
-  function fixMap() { requestAnimationFrame(function() { map.invalidateSize(); }); }
-  fixMap();
-  [100, 300, 700, 1500].forEach(function(t) { setTimeout(fixMap, t); });
-  window.addEventListener('resize', fixMap);
-  window.addEventListener('orientationchange', function() { setTimeout(fixMap, 400); });
+  setTimeout(() => map.invalidateSize(), 500);
+  window.addEventListener('resize', () => map.invalidateSize());
 
-  /* ── Durum değişkenleri ─────────────────────────────────────────── */
-  var railwayLines   = [];
-  var stations       = [];
-  var stationLayers  = [];
-  var railLayers     = [];
-  var routeLayer     = null;
-  var currentPath    = [];
-  var markerA        = null;
-  var markerB        = null;
-  var selectedA      = null;
-  var selectedB      = null;
+  // ── State ─────────────────────────────────────────────────────────
+  let railwayLines   = [];
+  let stations       = [];
+  let stationMarkers = [];
+  let railLayers     = [];
+  let routeLayer     = null;
+  let currentPath    = [];
+  let markerA        = null;
+  let markerB        = null;
+  let selectedA      = null;
+  let selectedB      = null;
 
-  var gpsWatchId      = null;
-  var userMarker      = null;
-  var accuracyCircle  = null;
-  var lastPos         = null;
-  var lastTime        = null;
-  var currentSpeedKmh = 0;
+  let gpsWatchId = null;
+  let userMarker = null;
 
-  /* ── DOM referansları ────────────────────────────────────────────── */
-  var statusEl    = document.getElementById('statusMsg');
-  var loadingEl   = document.getElementById('loadingBar');
-  var routeStats  = document.getElementById('routeStats');
-  var gpsStats    = document.getElementById('gpsStats');
-  var btnRoute    = document.getElementById('btnRoute');
-  var btnClear    = document.getElementById('btnClear');
-  var btnGps      = document.getElementById('btnGps');
-  var btnRetry    = document.getElementById('btnRetry');
-  var btnFitRoute = document.getElementById('btnFitRoute');
-  var btnLocate   = document.getElementById('btnLocate');
-  var btnFitTurkey= document.getElementById('btnFitTurkey');
-  var boxRemTime  = document.getElementById('boxRemTime');
-  var gpsCoordRow = document.getElementById('gpsCoordRow');
+  const statusEl   = document.getElementById('statusMsg');
+  const loadingEl  = document.getElementById('loadingBar');
+  const statsEl    = document.getElementById('routeStats');
+  const btnRoute   = document.getElementById('btnRoute');
+  const btnClear   = document.getElementById('btnClear');
+  const btnGps     = document.getElementById('btnGps');
+  const boxSpeed   = document.getElementById('boxSpeed');
+  const boxRemTime = document.getElementById('boxRemTime');
 
-  /* ── Yardımcı fonksiyonlar ───────────────────────────────────────── */
-  function setStatus(msg, type) {
+  // ── Helpers ───────────────────────────────────────────────────────
+  function setStatus(msg, type='') {
     statusEl.textContent = msg;
-    statusEl.className = 'status-msg' + (type ? ' ' + type : '');
+    statusEl.className = 'status-msg' + (type ? ' '+type : '');
   }
   function setLoading(on) {
     loadingEl.className = 'loading-bar' + (on ? ' active' : '');
   }
-
-  /* Haversine mesafe hesabı (km) */
+  
   function haversine(a, b) {
-    var R = 6371, toR = Math.PI / 180;
-    var dLat = (b[0] - a[0]) * toR;
-    var dLon = (b[1] - a[1]) * toR;
-    var sLat = Math.sin(dLat / 2);
-    var sLon = Math.sin(dLon / 2);
-    var x = sLat * sLat + Math.cos(a[0] * toR) * Math.cos(b[0] * toR) * sLon * sLon;
+    const R = 6371;
+    const toR = function(d) { return d * Math.PI / 180; };
+    const dLat = toR(b[0] - a[0]);
+    const dLon = toR(b[1] - a[1]);
+    const sinLat = Math.sin(dLat / 2);
+    const sinLon = Math.sin(dLon / 2);
+    const x = (sinLat * sinLat) + Math.cos(toR(a[0])) * Math.cos(toR(b[0])) * (sinLon * sinLon);
     return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
   }
 
-  /* Süre biçimleme */
-  function fmtTime(mins, unitColor) {
-    var c = unitColor || 'var(--muted)';
-    var su = '<span class="stat-unit" style="color:' + c + '">';
-    if (mins < 60) return mins + su + 'dk</span>';
-    var h = Math.floor(mins / 60), m = mins % 60;
-    return h + su + 'sa</span>' + (m ? ' ' + m + su + 'dk</span>' : '');
-  }
-
-  /* Türkçe karakter normalleştirme (arama için) */
-  function norm(s) {
-    return s.toLowerCase()
-      .replace(/ı/g,'i').replace(/İ/g,'i')
-      .replace(/ş/g,'s').replace(/Ş/g,'s')
-      .replace(/ç/g,'c').replace(/Ç/g,'c')
-      .replace(/ö/g,'o').replace(/Ö/g,'o')
-      .replace(/ü/g,'u').replace(/Ü/g,'u')
-      .replace(/ğ/g,'g').replace(/Ğ/g,'g');
-  }
-
-  /* ── Overpass API sorgusu (zaman aşımlı) ────────────────────────── */
-  function fetchOverpass(query) {
-    return new Promise(function(resolve, reject) {
-      var done = false;
-      var timer = setTimeout(function() {
-        if (!done) { done = true; reject(new Error('Sunucu yanıt vermedi (zaman aşımı). Biraz bekleyip tekrar deneyin.')); }
-      }, 35000);
-
-      fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query)
-      }).then(function(r) {
-        clearTimeout(timer);
-        done = true;
-        if (!r.ok) {
-          if (r.status === 429) throw new Error('Çok fazla istek (429). 1-2 dakika bekleyip tekrar deneyin.');
-          throw new Error('Overpass API hatası: HTTP ' + r.status);
-        }
-        return r.json();
-      }).then(resolve).catch(function(e) {
-        clearTimeout(timer);
-        if (!done) { done = true; reject(e); }
-        else reject(e);
-      });
+  // ── Overpass fetch ────────────────────────────────────────────────
+  async function fetchOverpass(query) {
+    const url = 'https://overpass-api.de/api/interpreter';
+    const r = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'data='+encodeURIComponent(query)
     });
+    if (!r.ok) throw new Error('Overpass reddetti (Kod: '+r.status+'). Çok fazla istek atmış olabilirsiniz, biraz bekleyin.');
+    return r.json();
   }
 
-  /* ── Demiryolu hatlarını yükle ───────────────────────────────────── */
-  function loadRailways() {
+  // ── Load railways ─────────────────────────────────────────────────
+  async function loadRailways() {
     setLoading(true);
-    btnRetry.className = 'btn-retry';
-    setStatus('Türkiye demiryolu verileri indiriliyor (10–30 sn sürebilir)…');
+    setStatus('Türkiye demiryolu verileri indiriliyor (10-20 sn sürebilir)…');
 
-    var q = '[out:json][timeout:90];\n' +
-            'area["ISO3166-1"="TR"][admin_level=2]->.tr;\n' +
-            '(way["railway"~"^(rail|narrow_gauge|light_rail|preserved)$"](area.tr););\n' +
-            'out geom;';
+    const query = `
+      [out:json][timeout:90];
+      area["ISO3166-1"="TR"][admin_level=2]->.tr;
+      (way["railway"~"^(rail|narrow_gauge|light_rail|preserved)$"](area.tr););
+      out geom;
+    `;
 
-    fetchOverpass(q).then(function(data) {
+    try {
+      const data = await fetchOverpass(query);
       railwayLines = [];
-      data.elements.forEach(function(el) {
-        if (el.type === 'way' && el.geometry && el.geometry.length >= 2) {
-          railwayLines.push({
-            coords: el.geometry.map(function(p) { return [p.lat, p.lon]; }),
-            tags: el.tags || {}
-          });
+      data.elements.forEach(el => {
+        if (el.type === 'way' && el.geometry) {
+          const coords = el.geometry.map(p => [p.lat, p.lon]);
+          if (coords.length >= 2) railwayLines.push({ coords, tags: el.tags || {}, id: el.id });
         }
       });
       drawRailways();
-      setStatus(railwayLines.length + ' hat yüklendi — İstasyonlar alınıyor…');
-      return loadStations();
-    }).catch(function(e) {
+      setStatus(`${railwayLines.length} hat yüklendi. İstasyonlar alınıyor…`);
+      await loadStations();
+    } catch(e) {
       setLoading(false);
-      setStatus('Veri hatası: ' + e.message, 'error');
-      btnRetry.className = 'btn-retry show';
-    });
+      setStatus('Hata: ' + e.message, 'error');
+    }
   }
 
   function drawRailways() {
-    railLayers.forEach(function(l) { map.removeLayer(l); });
+    railLayers.forEach(l => map.removeLayer(l));
     railLayers = [];
-    /* Canvas renderer: çok sayıda segment için çok daha hızlı */
-    var renderer = L.canvas();
-    railwayLines.forEach(function(line) {
-      var l = L.polyline(line.coords, {
-        renderer: renderer,
-        color: '#F5C518', weight: 1.8, opacity: 0.55,
-        lineJoin: 'round', lineCap: 'round'
-      }).addTo(map);
-      railLayers.push(l);
+    railwayLines.forEach(line => {
+      const layer = L.polyline(line.coords, { color: '#F5C518', weight: 1.8, opacity: 0.6, lineJoin:'round', lineCap:'round' }).addTo(map);
+      railLayers.push(layer);
     });
   }
 
-  /* ── İstasyonları yükle ─────────────────────────────────────────── */
-  function loadStations() {
-    var q = '[out:json][timeout:60];\n' +
-            'area["ISO3166-1"="TR"][admin_level=2]->.tr;\n' +
-            '(node["railway"="station"](area.tr);\n' +
-            ' node["railway"="halt"](area.tr););\n' +
-            'out body;';
-
-    return fetchOverpass(q).then(function(data) {
+  async function loadStations() {
+    const query = `
+      [out:json][timeout:60];
+      area["ISO3166-1"="TR"][admin_level=2]->.tr;
+      (node["railway"="station"](area.tr); node["railway"="halt"](area.tr););
+      out body;
+    `;
+    try {
+      const data = await fetchOverpass(query);
       stations = [];
-      data.elements.forEach(function(el) {
-        var name = (el.tags && (el.tags['name:tr'] || el.tags['name'])) || null;
-        if (name) stations.push({ name: name, lat: el.lat, lng: el.lon, id: el.id, tags: el.tags || {} });
+      data.elements.forEach(el => {
+        const name = el.tags['name:tr'] || el.tags.name || null;
+        if (name) stations.push({ name, lat: el.lat, lng: el.lon, id: el.id, tags: el.tags });
       });
-      stations.sort(function(a, b) { return a.name.localeCompare(b.name, 'tr'); });
+      stations.sort((a,b) => a.name.localeCompare(b.name, 'tr'));
       drawStationDots();
       setLoading(false);
-      setStatus('Hazır — ' + stations.length + ' istasyon yüklendi. Kalkış ve varış seçin.', 'success');
-    }).catch(function(e) {
+      setStatus(`Tüm veriler hazır! Kalkış ve varış seçiniz.`, 'success');
+    } catch(e) {
       setLoading(false);
       setStatus('İstasyon hatası: ' + e.message, 'error');
-      btnRetry.className = 'btn-retry show';
-    });
+    }
   }
 
   function drawStationDots() {
-    stationLayers.forEach(function(m) { map.removeLayer(m); });
-    stationLayers = [];
-    var renderer = L.canvas();
-    stations.forEach(function(st) {
-      var m = L.circleMarker([st.lat, st.lng], {
-        renderer: renderer,
-        radius: 4, color: '#00B4D8',
-        fillColor: '#00B4D8', fillOpacity: 0.8, weight:
+    stationMarkers.forEach(m => map.removeLayer(m));
+    stationMarkers = [];
+    stations.forEach(st => {
+      const circle = L.circleMarker([st.lat, st.lng], { radius: 4, color:'#00B4D8', fillColor:'#00B4D8', fillOpacity:.8, weight:1.5 }).addTo(map);
+      circle.bindTooltip(st.name);
+      stationMarkers.push(circle);
+    });
+  }
+
+  // ── Autocomplete ──────────────────────────────────────────────────
+  function setupAutocomplete(inputId, listId, onSelect) {
+    const input = document.getElementById(inputId);
+    const list  = document.getElementById(listId);
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim().toLocaleLowerCase('tr-TR');
+      list.innerHTML = '';
+      if (val.length < 1) { list.classList.remove('open'); return; }
+
+      const matches = stations.filter(s => s.name.toLocaleLowerCase('tr-TR').includes(val)).slice(0, 10);
+      if (!matches.length) { list.classList.remove('open'); return; }
+
+      matches.forEach(st => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = st.name;
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = st.name;
+          list.classList.remove('open');
+          onSelect(st);
+        });
+        list.appendChild(item);
+      });
+      list.classList.add('open');
+    });
+    input.addEventListener('blur', () => setTimeout(()=>list.classList.remove('open'), 200));
+  }
+
+  // ── Route finding ─────────────────────────────────────────────────
+  const iconA = L.divIcon({ html:'<div style="background:#00B4D8;width:14px;height:14px;border-radius:50%;border:2px solid #fff;"></div>', className:'', iconAnchor:[7,7] });
+  const iconB = L.divIcon({ html:'<div style="background:#FF4D4D;width:14px;height:14px;border-radius:50%;border:2px solid #fff;"></div>', className:'', iconAnchor:[7,7] });
+
+  function pinA(st) {
+    if (markerA) map.removeLayer(markerA);
+    markerA = L.marker([st.lat, st.lng], {icon:iconA}).addTo(map).bindPopup(`<b>Kalkış:</b> ${st.name}`);
+    selectedA = st; checkReady();
+  }
+  function pinB(st) {
+    if (markerB) map.removeLayer(markerB);
+    markerB = L.marker([st.lat, st.lng], {icon:iconB}).addTo(map).bindPopup(`<b>Varış:</b> ${st.name}`);
+    selectedB = st; checkReady();
+  }
+  function checkReady() { btnRoute.disabled = !(selectedA && selectedB); }
+
+  function buildGraph() {
+    const graph = new Map();
+    const keyOf = function(pt) { return pt[0].toFixed(5) + ',' + pt[1].toFixed(5); };
+
+    function addEdge(a, b, dist) {
+      const ka = keyOf(a), kb = keyOf(b);
+      if (!graph.has(ka)) graph.set(ka, []);
+      if (!graph.has(kb)) graph.set(kb, []);
+      graph.get(ka).push({ key:kb, dist, coord:b });
+      graph.get(kb).push({ key:ka, dist, coord:a });
+    }
+    railwayLines.forEach(line => {
+      for (let i=0; i<line.coords.length-1; i++) {
+        addEdge(line.coords[i], line.coords[i+1], haversine(line.coords[i], line.coords[i+1]));
+      }
+    });
+    return { graph, keyOf };
+  }
+
+  function dijkstra(graph, keyOf, startCoord, endCoord) {
+    const startKey = keyOf(startCoord), endKey = keyOf(endCoord);
+    const dist = new Map(), prev = new Map(), visited = new Set();
+    const queue = [{ key:startKey, d:0, coord:startCoord }];
+    dist.set(startKey, 0);
+
+    let iterations = 0;
+    while (queue.length && iterations++ < 250000) {
+      queue.sort(function(a,b) { return a.d - b.d; });
+      const current = queue.shift();
+      if (visited.has(current.key)) continue;
+      visited.add(current.key);
+      if (current.key === endKey) break;
+
+      const neighbors = graph.get(current.key) || [];
+      for (let i=0; i<neighbors.length; i++) {
+        const nb = neighbors[i];
+        if (visited.has(nb.key)) continue;
+        const nd = current.d + nb.dist;
+        if (!dist.has(nb.key) || nd < dist.get(nb.key)) {
+          dist.set(nb.key, nd);
+          prev.set(nb.key, { key: current.key, coord: current.coord });
+          queue.push({ key:nb.key, d:nd, coord:nb.coord });
+        }
+      }
+    }
+    const path = [];
+    let cur = endKey;
+    while (cur && prev.has(cur)) {
+      const p = prev.get(cur);
+      path.unshift(p.coord);
+      cur = p.key;
+    }
+    if (path.length) path.push(endCoord);
+    return { path, totalDist: dist.get(endKey) || 0 };
+  }
+
+  function drawRoute() {
+    if (!selectedA || !selectedB) return;
+    if (routeLayer) map.removeLayer(routeLayer);
+    statsEl.style.display = 'none';
+    if(gpsWatchId) boxRemTime.style.display = 'none';
+    currentPath = [];
+    setLoading(true); setStatus('Rota hesaplanıyor…');
+
+    setTimeout(() => {
+      try {
+        const { graph, keyOf } = buildGraph();
+        
+        let nodeA = null, nodeB = null, minDA = Infinity, minDB = Infinity;
+        railwayLines.forEach(line => {
+          line.coords.forEach(c => {
+            let da = haversine([selectedA.lat, selectedA.lng], c);
+            let db = haversine([selectedB.lat, selectedB.lng], c);
+            if(da < minDA) { minDA = da; nodeA = c; }
+            if(db < minDB) { minDB = db; nodeB = c; }
+          });
+        });
+
+        if (!nodeA || !nodeB) { setStatus('İstasyonlar hattan çok uzak.', 'error'); setLoading(false); return; }
+
+        const { path, totalDist } = dijkstra(graph, keyOf, nodeA, nodeB);
+        if (!path.length) { setStatus('Hatlar arasında bağlantı kurulamadı.', 'error'); setLoading(false); return; }
+
+        currentPath = path;
+        routeLayer = L.polyline(path, { color: '#FF4D4D', weight: 5, opacity: 0.9 }).addTo(map);
+        map.fitBounds(routeLayer.getBounds(), { padding: [30, 30] });
+
+        const distKm = totalDist.toFixed(1);
+        const timeMin = Math.round((totalDist / 120) * 60);
+
+        document.getElementById('statDist').innerHTML = `${distKm}<span class="stat-unit">km</span>`;
+        document.getElementById('statTime').innerHTML = `${timeMin}<span class="stat-unit">dk</span>`;
+        statsEl.style.display = 'flex';
+        
+        setStatus(`Rota başarıyla çizildi: ${distKm} km`, 'success');
+        setLoading(false);
+      } catch (err) {
+        setStatus('Rota he
