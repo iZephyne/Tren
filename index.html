@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Türkiye Demiryolu Rota & GPS Takip</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -25,241 +25,97 @@
     --sans:     'Inter', sans-serif;
   }
 
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  html, body { 
+    height: 100%; width: 100%; 
+    background: var(--bg); color: var(--text); 
+    font-family: var(--sans); overflow: hidden; 
+  }
 
   /* ── Layout ── */
-  .shell { display: flex; height: 100vh; overflow: hidden; }
+  .shell { 
+    display: flex; flex-direction: column;
+    width: 100vw; height: 100vh; height: 100dvh; 
+    overflow: hidden;
+  }
 
   /* ── Sidebar ── */
   .sidebar {
-    width: 320px; flex-shrink: 0;
+    flex: 0 0 auto;
+    height: 50%; /* Mobilde tam yarı yarıya bölüşüm */
     background: var(--panel);
-    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     display: flex; flex-direction: column;
     overflow-y: auto;
+    z-index: 10;
   }
 
-  .logo {
-    padding: 20px 20px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .logo-tag {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--rail);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  .logo-title {
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
-  }
-  .logo-sub {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
+  .logo { padding: 15px 20px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .logo-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--rail); text-transform: uppercase; margin-bottom: 4px; }
+  .logo-title { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
   /* ── Search boxes ── */
-  .section { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-  .section-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    margin-bottom: 10px;
-    text-transform: uppercase;
-  }
+  .section { padding: 15px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .section-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; }
 
-  .station-row {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-  }
-  .dot {
-    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-  }
+  .station-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .dot-a { background: var(--station); }
   .dot-b { background: var(--route); }
 
   .station-input-wrap { position: relative; flex: 1; }
-  .station-input {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 9px 12px;
-    font-size: 13px;
-    color: var(--text);
-    font-family: var(--sans);
-    outline: none;
-    transition: border-color .2s;
-  }
+  .station-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-size: 13px; color: var(--text); outline: none; transition: border-color .2s; }
   .station-input:focus { border-color: var(--station); }
-  .station-input::placeholder { color: var(--muted); }
-
-  .autocomplete-list {
-    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-    background: #162536;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    z-index: 9999;
-    max-height: 180px;
-    overflow-y: auto;
-    display: none;
-  }
+  
+  .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #162536; border: 1px solid var(--border); border-radius: 6px; z-index: 99999; max-height: 150px; overflow-y: auto; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
   .autocomplete-list.open { display: block; }
-  .autocomplete-item {
-    padding: 9px 12px;
-    font-size: 13px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border);
-    transition: background .15s;
-  }
-  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
   .autocomplete-item:hover { background: var(--border); }
-  .autocomplete-item .dist {
-    font-size: 11px;
-    color: var(--muted);
-    margin-left: 6px;
-  }
 
   /* ── Buttons ── */
-  .btn-route {
-    width: 100%;
-    background: var(--rail);
-    color: #0D1B2A;
-    border: none;
-    border-radius: 6px;
-    padding: 11px;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: var(--mono);
-    letter-spacing: 1px;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: opacity .2s, background .2s;
-    margin-top: 4px;
-  }
-  .btn-route:hover { opacity: .85; }
+  .btn-route { width: 100%; background: var(--rail); color: #0D1B2A; border: none; border-radius: 6px; padding: 11px; font-size: 13px; font-weight: 600; font-family: var(--mono); letter-spacing: 1px; cursor: pointer; text-transform: uppercase; margin-top: 4px; transition: opacity .2s; }
   .btn-route:disabled { opacity: .4; cursor: not-allowed; }
-
-  .btn-clear {
-    width: 100%;
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px;
-    font-size: 12px;
-    font-family: var(--sans);
-    cursor: pointer;
-    margin-top: 6px;
-    transition: color .2s, border-color .2s;
-  }
+  .btn-clear { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 12px; cursor: pointer; margin-top: 6px; transition: color .2s, border-color .2s; }
   .btn-clear:hover { color: var(--text); border-color: var(--muted); }
 
   /* ── Info panel ── */
-  .info-panel { padding: 16px 20px; flex: 1; }
-
-  .status-msg {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.6;
-    margin-bottom: 12px;
-  }
-  .status-msg.error { color: #FF6B6B; }
+  .info-panel { padding: 15px 20px; flex-shrink: 0; }
+  .status-msg { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; word-wrap: break-word; }
+  .status-msg.error { color: #FF6B6B; font-weight: bold; }
   .status-msg.success { color: #4ECDC4; }
   .status-msg.gps { color: var(--gps); }
 
-  .route-stats { display: flex; flex-direction: column; gap: 10px; }
-  .stat-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-  }
-  .stat-label {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  .stat-value {
-    font-family: var(--mono);
-    font-size: 22px;
-    color: var(--rail);
-  }
-  .stat-value.live {
-    color: var(--gps);
-  }
-  .stat-unit { font-size: 12px; color: var(--muted); margin-left: 3px; }
+  .route-stats { display: flex; flex-direction: column; gap: 8px; }
+  .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .stat-value { font-family: var(--mono); font-size: 20px; color: var(--rail); }
+  .stat-value.live { color: var(--gps); }
+  .stat-unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
 
   /* ── Loading bar ── */
-  .loading-bar {
-    height: 2px;
-    background: var(--border);
-    border-radius: 1px;
-    overflow: hidden;
-    margin-bottom: 12px;
-    display: none;
-  }
+  .loading-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; margin-bottom: 12px; display: none; }
   .loading-bar.active { display: block; }
-  .loading-bar-fill {
-    height: 100%;
-    background: var(--rail);
-    width: 0%;
-    animation: loading 1.5s ease-in-out infinite;
-  }
-  @keyframes loading {
-    0%   { width: 0%; margin-left: 0; }
-    50%  { width: 70%; margin-left: 15%; }
-    100% { width: 0%; margin-left: 100%; }
-  }
-
-  /* ── Legend ── */
-  .legend {
-    padding: 14px 20px;
-    border-top: 1px solid var(--border);
-  }
-  .legend-title {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .legend-items { display: flex; flex-direction: column; gap: 6px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
-  .legend-line {
-    width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0;
-  }
+  .loading-bar-fill { height: 100%; background: var(--rail); width: 0%; animation: loading 1.5s ease-in-out infinite; }
+  @keyframes loading { 0% { width: 0%; margin-left: 0; } 50% { width: 70%; margin-left: 15%; } 100% { width: 0%; margin-left: 100%; } }
 
   /* ── Map ── */
-  #map { flex: 1; background: #0a1520; }
+  #map { 
+    flex: 1 1 auto; 
+    height: 50%; /* Mobilde garantili alan */
+    width: 100%; 
+    background: #0a1520; 
+    z-index: 1; 
+  }
 
   /* Leaflet dark override */
   .leaflet-tile { filter: brightness(0.55) saturate(0.4) hue-rotate(190deg); }
-  .leaflet-control-zoom a {
-    background: var(--panel) !important;
-    color: var(--text) !important;
-    border-color: var(--border) !important;
-  }
-  .leaflet-control-attribution {
-    background: rgba(13,27,42,.8) !important;
-    color: var(--muted) !important;
-    font-size: 9px !important;
-  }
-  .leaflet-control-attribution a { color: var(--station) !important; }
+  .leaflet-control-zoom a { background: var(--panel) !important; color: var(--text) !important; border-color: var(--border) !important; }
 
-  /* ── Responsive ── */
-  @media (max-width: 600px) {
-    .shell { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; max-height: 50vh; }
-    #map { flex: 1; }
+  /* ── Desktop View ── */
+  @media (min-width: 601px) {
+    .shell { flex-direction: row; }
+    .sidebar { width: 320px; height: 100%; flex: 0 0 320px; border-right: 1px solid var(--border); border-bottom: none; }
+    #map { height: 100%; }
   }
 </style>
 </head>
@@ -268,7 +124,6 @@
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
-
     <div class="logo">
       <div class="logo-tag">TCDD · Demiryolu</div>
       <div class="logo-title">Rota Planlayıcı & GPS</div>
@@ -277,8 +132,6 @@
 
     <div class="section">
       <div class="section-label">Güzergah Seç</div>
-
-      <!-- Kalkış -->
       <div class="station-row">
         <div class="dot dot-a"></div>
         <div class="station-input-wrap">
@@ -286,8 +139,6 @@
           <div class="autocomplete-list" id="listA"></div>
         </div>
       </div>
-
-      <!-- Varış -->
       <div class="station-row">
         <div class="dot dot-b"></div>
         <div class="station-input-wrap">
@@ -295,7 +146,6 @@
           <div class="autocomplete-list" id="listB"></div>
         </div>
       </div>
-
       <button class="btn-route" id="btnRoute" disabled>Rotayı Göster</button>
       <button class="btn-clear" id="btnClear">Seçimleri Temizle</button>
       <button class="btn-route" id="btnGps" style="background:var(--gps); color:#0D1B2A; margin-top:10px;">GPS & Hız Ölçer Başlat</button>
@@ -303,21 +153,20 @@
 
     <div class="info-panel">
       <div class="loading-bar" id="loadingBar"><div class="loading-bar-fill"></div></div>
-      <div class="status-msg" id="statusMsg">Harita yükleniyor, istasyonlar alınıyor…</div>
+      <div class="status-msg" id="statusMsg">Harita altyapısı hazırlanıyor...</div>
       
       <div class="route-stats" id="routeStats" style="display:none">
-        <!-- Rota Bilgileri -->
         <div class="stat-box">
           <div class="stat-label">Toplam Mesafe</div>
           <div class="stat-value" id="statDist">—<span class="stat-unit">km</span></div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Tahmini Süre (Sabit 120km/h)</div>
+          <div class="stat-label">Tahmini Süre (120km/h)</div>
           <div class="stat-value" id="statTime">—<span class="stat-unit">dk</span></div>
         </div>
       </div>
       
-      <!-- GPS Canlı Veriler (Sonradan Belirir) -->
+      <!-- GPS Canlı Veriler -->
       <div class="route-stats" style="margin-top: 10px;">
         <div class="stat-box" id="boxSpeed" style="display:none; border-color:var(--gps);">
           <div class="stat-label" style="color:var(--gps)">Anlık Hız</div>
@@ -328,31 +177,7 @@
           <div class="stat-value live" id="statRemTime">—</div>
         </div>
       </div>
-
     </div>
-
-    <div class="legend">
-      <div class="legend-title">Gösterge</div>
-      <div class="legend-items">
-        <div class="legend-item">
-          <div class="legend-line" style="background:#F5C518"></div>
-          <span>Demiryolu hattı</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-line" style="background:#FF4D4D"></div>
-          <span>Seçili rota</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-line" style="background:#00B4D8; height:3px; border-radius:50%; width:10px; height:10px;"></div>
-          <span>İstasyon</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-line" style="background:#00FF88; height:3px; border-radius:50%; width:10px; height:10px; box-shadow: 0 0 5px #00FF88;"></div>
-          <span>Canlı Konum</span>
-        </div>
-      </div>
-    </div>
-
   </aside>
 
   <!-- MAP -->
@@ -361,296 +186,305 @@
 </div>
 
 <script>
-// ── Map init ──────────────────────────────────────────────────────
-const map = L.map('map', {
-  center: [39.0, 35.5],
-  zoom: 6,
-  zoomControl: true,
-  attributionControl: true
-});
+// --- Global Hata Yakalayıcı (Gizli Çökmeleri Ekrana Basar) ---
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+  const el = document.getElementById('statusMsg');
+  if(el) {
+    el.textContent = "SİSTEM HATASI: " + msg;
+    el.className = 'status-msg error';
+  }
+  return false;
+};
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors',
-  maxZoom: 18
-}).addTo(map);
+document.addEventListener("DOMContentLoaded", function() {
+  // Eğer Leaflet yüklenemezse (İnternet yoksa vs.) işlemi durdur.
+  if (typeof L === 'undefined') {
+    const el = document.getElementById('statusMsg');
+    el.textContent = "Kritik Hata: Harita kütüphanesi yüklenemedi. Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.";
+    el.className = 'status-msg error';
+    return;
+  }
 
-// ── State ─────────────────────────────────────────────────────────
-let railwayLines   = [];   // [{coords:[[lat,lng],...], tags:{}}]
-let stations       = [];   // [{name, lat, lng, node_id}]
-let stationMarkers = [];
-let railLayers     = [];
-let routeLayer     = null;
-let currentPath    = [];   // Rotanın koordinat dizisi
-let markerA        = null;
-let markerB        = null;
-let selectedA      = null;
-let selectedB      = null;
-
-// GPS States
-let gpsWatchId = null;
-let userMarker = null;
-let lastPos = null;
-let lastTime = null;
-let currentSpeedKmh = 0;
-
-const statusEl   = document.getElementById('statusMsg');
-const loadingEl  = document.getElementById('loadingBar');
-const statsEl    = document.getElementById('routeStats');
-const btnRoute   = document.getElementById('btnRoute');
-const btnClear   = document.getElementById('btnClear');
-
-const btnGps     = document.getElementById('btnGps');
-const boxSpeed   = document.getElementById('boxSpeed');
-const boxRemTime = document.getElementById('boxRemTime');
-
-// ── Helpers ───────────────────────────────────────────────────────
-function setStatus(msg, type='') {
-  statusEl.textContent = msg;
-  statusEl.className = 'status-msg' + (type ? ' '+type : '');
-}
-function setLoading(on) {
-  loadingEl.className = 'loading-bar' + (on ? ' active' : '');
-}
-function haversine(a, b) {
-  const R = 6371, toR = d => d * Math.PI/180;
-  const dLat = toR(b[0]-a[0]), dLon = toR(b[1]-a[1]);
-  const x = Math.sin(dLat/2)**2 + Math.cos(toR(a[0]))*Math.cos(toR(b[0]))*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-}
-function totalLength(coords) {
-  let d = 0;
-  for (let i=1;i<coords.length;i++) d += haversine(coords[i-1], coords[i]);
-  return d;
-}
-
-// ── Overpass fetch ────────────────────────────────────────────────
-async function fetchOverpass(query) {
-  const url = 'https://overpass-api.de/api/interpreter';
-  const r = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:'data='+encodeURIComponent(query)
+  // ── Map init ──────────────────────────────────────────────────────
+  const map = L.map('map', {
+    center: [39.0, 35.5],
+    zoom: 5, // Mobilde daha iyi görünüm için 5'e çekildi
+    zoomControl: true,
+    attributionControl: false
   });
-  if (!r.ok) throw new Error('Overpass API hatası: '+r.status);
-  return r.json();
-}
 
-// ── Load railways ─────────────────────────────────────────────────
-async function loadRailways() {
-  setLoading(true);
-  setStatus('Türkiye demiryolu verileri alınıyor…');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
+  }).addTo(map);
 
-  const query = `
-    [out:json][timeout:90];
-    area["ISO3166-1"="TR"][admin_level=2]->.tr;
-    (
-      way["railway"~"^(rail|narrow_gauge|light_rail|preserved)$"](area.tr);
-    );
-    out geom;
-  `;
+  // Flexbox veya ekran dönmesinde harita boyutunu tamir et
+  setTimeout(() => map.invalidateSize(), 500);
+  window.addEventListener('resize', () => map.invalidateSize());
 
-  try {
-    const data = await fetchOverpass(query);
-    railwayLines = [];
+  // ── State ─────────────────────────────────────────────────────────
+  let railwayLines   = [];
+  let stations       = [];
+  let stationMarkers = [];
+  let railLayers     = [];
+  let routeLayer     = null;
+  let currentPath    = [];
+  let markerA        = null;
+  let markerB        = null;
+  let selectedA      = null;
+  let selectedB      = null;
 
-    data.elements.forEach(el => {
-      if (el.type === 'way' && el.geometry) {
-        const coords = el.geometry.map(p => [p.lat, p.lon]);
-        if (coords.length >= 2) {
-          railwayLines.push({ coords, tags: el.tags || {}, id: el.id });
+  // GPS States
+  let gpsWatchId = null;
+  let userMarker = null;
+  let lastPos = null;
+  let lastTime = null;
+  let currentSpeedKmh = 0;
+
+  const statusEl   = document.getElementById('statusMsg');
+  const loadingEl  = document.getElementById('loadingBar');
+  const statsEl    = document.getElementById('routeStats');
+  const btnRoute   = document.getElementById('btnRoute');
+  const btnClear   = document.getElementById('btnClear');
+  const btnGps     = document.getElementById('btnGps');
+  const boxSpeed   = document.getElementById('boxSpeed');
+  const boxRemTime = document.getElementById('boxRemTime');
+
+  // ── Helpers ───────────────────────────────────────────────────────
+  function setStatus(msg, type='') {
+    statusEl.textContent = msg;
+    statusEl.className = 'status-msg' + (type ? ' '+type : '');
+  }
+  function setLoading(on) {
+    loadingEl.className = 'loading-bar' + (on ? ' active' : '');
+  }
+  
+  // Eski cihazların " ** " operatöründe çökmesini engellemek için güvenli matematik işlemi yapıldı.
+  function haversine(a, b) {
+    const R = 6371;
+    const toR = function(d) { return d * Math.PI / 180; };
+    const dLat = toR(b[0] - a[0]);
+    const dLon = toR(b[1] - a[1]);
+    const sinLat = Math.sin(dLat / 2);
+    const sinLon = Math.sin(dLon / 2);
+    const x = (sinLat * sinLat) + Math.cos(toR(a[0])) * Math.cos(toR(b[0])) * (sinLon * sinLon);
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+
+  // ── Overpass fetch ────────────────────────────────────────────────
+  async function fetchOverpass(query) {
+    const url = 'https://overpass-api.de/api/interpreter';
+    const r = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'data='+encodeURIComponent(query)
+    });
+    if (!r.ok) throw new Error('Overpass reddetti (Kod: '+r.status+'). Çok fazla istek atmış olabilirsiniz, biraz bekleyin.');
+    return r.json();
+  }
+
+  // ── Load railways ─────────────────────────────────────────────────
+  async function loadRailways() {
+    setLoading(true);
+    setStatus('Türkiye demiryolu verileri indiriliyor (10-20 sn sürebilir)…');
+
+    const query = `
+      [out:json][timeout:90];
+      area["ISO3166-1"="TR"][admin_level=2]->.tr;
+      (way["railway"~"^(rail|narrow_gauge|light_rail|preserved)$"](area.tr););
+      out geom;
+    `;
+
+    try {
+      const data = await fetchOverpass(query);
+      railwayLines = [];
+      data.elements.forEach(el => {
+        if (el.type === 'way' && el.geometry) {
+          const coords = el.geometry.map(p => [p.lat, p.lon]);
+          if (coords.length >= 2) railwayLines.push({ coords, tags: el.tags || {}, id: el.id });
+        }
+      });
+      drawRailways();
+      setStatus(`${railwayLines.length} hat yüklendi. İstasyonlar alınıyor…`);
+      await loadStations();
+    } catch(e) {
+      setLoading(false);
+      setStatus('Hata: ' + e.message, 'error');
+    }
+  }
+
+  function drawRailways() {
+    railLayers.forEach(l => map.removeLayer(l));
+    railLayers = [];
+    railwayLines.forEach(line => {
+      const layer = L.polyline(line.coords, { color: '#F5C518', weight: 1.8, opacity: 0.6, lineJoin:'round', lineCap:'round' }).addTo(map);
+      railLayers.push(layer);
+    });
+  }
+
+  async function loadStations() {
+    const query = `
+      [out:json][timeout:60];
+      area["ISO3166-1"="TR"][admin_level=2]->.tr;
+      (node["railway"="station"](area.tr); node["railway"="halt"](area.tr););
+      out body;
+    `;
+    try {
+      const data = await fetchOverpass(query);
+      stations = [];
+      data.elements.forEach(el => {
+        const name = el.tags['name:tr'] || el.tags.name || null;
+        if (name) stations.push({ name, lat: el.lat, lng: el.lon, id: el.id, tags: el.tags });
+      });
+      stations.sort((a,b) => a.name.localeCompare(b.name, 'tr'));
+      drawStationDots();
+      setLoading(false);
+      setStatus(`Tüm veriler hazır! Kalkış ve varış seçiniz.`, 'success');
+    } catch(e) {
+      setLoading(false);
+      setStatus('İstasyon hatası: ' + e.message, 'error');
+    }
+  }
+
+  function drawStationDots() {
+    stationMarkers.forEach(m => map.removeLayer(m));
+    stationMarkers = [];
+    stations.forEach(st => {
+      const circle = L.circleMarker([st.lat, st.lng], { radius: 4, color:'#00B4D8', fillColor:'#00B4D8', fillOpacity:.8, weight:1.5 }).addTo(map);
+      circle.bindTooltip(st.name);
+      stationMarkers.push(circle);
+    });
+  }
+
+  // ── Autocomplete ──────────────────────────────────────────────────
+  function setupAutocomplete(inputId, listId, onSelect) {
+    const input = document.getElementById(inputId);
+    const list  = document.getElementById(listId);
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim().toLowerCase();
+      list.innerHTML = '';
+      if (val.length < 1) { list.classList.remove('open'); return; }
+
+      const matches = stations.filter(s => s.name.toLowerCase().includes(val)).slice(0, 10);
+      if (!matches.length) { list.classList.remove('open'); return; }
+
+      matches.forEach(st => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = st.name;
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = st.name;
+          list.classList.remove('open');
+          onSelect(st);
+        });
+        list.appendChild(item);
+      });
+      list.classList.add('open');
+    });
+    input.addEventListener('blur', () => setTimeout(()=>list.classList.remove('open'), 200));
+  }
+
+  // ── Route finding ─────────────────────────────────────────────────
+  const iconA = L.divIcon({ html:'<div style="background:#00B4D8;width:14px;height:14px;border-radius:50%;border:2px solid #fff;"></div>', className:'', iconAnchor:[7,7] });
+  const iconB = L.divIcon({ html:'<div style="background:#FF4D4D;width:14px;height:14px;border-radius:50%;border:2px solid #fff;"></div>', className:'', iconAnchor:[7,7] });
+
+  function pinA(st) {
+    if (markerA) map.removeLayer(markerA);
+    markerA = L.marker([st.lat, st.lng], {icon:iconA}).addTo(map).bindPopup(`<b>Kalkış:</b> ${st.name}`);
+    selectedA = st; checkReady();
+  }
+  function pinB(st) {
+    if (markerB) map.removeLayer(markerB);
+    markerB = L.marker([st.lat, st.lng], {icon:iconB}).addTo(map).bindPopup(`<b>Varış:</b> ${st.name}`);
+    selectedB = st; checkReady();
+  }
+  function checkReady() { btnRoute.disabled = !(selectedA && selectedB); }
+
+  function buildGraph() {
+    const graph = new Map();
+    const keyOf = function(pt) { return pt[0].toFixed(5) + ',' + pt[1].toFixed(5); };
+
+    function addEdge(a, b, dist) {
+      const ka = keyOf(a), kb = keyOf(b);
+      if (!graph.has(ka)) graph.set(ka, []);
+      if (!graph.has(kb)) graph.set(kb, []);
+      graph.get(ka).push({ key:kb, dist, coord:b });
+      graph.get(kb).push({ key:ka, dist, coord:a });
+    }
+    railwayLines.forEach(line => {
+      for (let i=0; i<line.coords.length-1; i++) {
+        addEdge(line.coords[i], line.coords[i+1], haversine(line.coords[i], line.coords[i+1]));
+      }
+    });
+    return { graph, keyOf };
+  }
+
+  function dijkstra(graph, keyOf, startCoord, endCoord) {
+    const startKey = keyOf(startCoord), endKey = keyOf(endCoord);
+    const dist = new Map(), prev = new Map(), visited = new Set();
+    const queue = [{ key:startKey, d:0, coord:startCoord }];
+    dist.set(startKey, 0);
+
+    let iterations = 0;
+    while (queue.length && iterations++ < 250000) {
+      queue.sort(function(a,b) { return a.d - b.d; });
+      const current = queue.shift();
+      if (visited.has(current.key)) continue;
+      visited.add(current.key);
+      if (current.key === endKey) break;
+
+      const neighbors = graph.get(current.key) || [];
+      for (let i=0; i<neighbors.length; i++) {
+        const nb = neighbors[i];
+        if (visited.has(nb.key)) continue;
+        const nd = current.d + nb.dist;
+        if (!dist.has(nb.key) || nd < dist.get(nb.key)) {
+          dist.set(nb.key, nd);
+          prev.set(nb.key, { key: current.key, coord: current.coord });
+          queue.push({ key:nb.key, d:nd, coord:nb.coord });
         }
       }
-    });
-
-    drawRailways();
-    setStatus(`${railwayLines.length} hat segmenti yüklendi. İstasyonlar alınıyor…`);
-    await loadStations();
-  } catch(e) {
-    setLoading(false);
-    setStatus('Veri alınamadı: ' + e.message, 'error');
-  }
-}
-
-// ── Draw railways ─────────────────────────────────────────────────
-function drawRailways() {
-  railLayers.forEach(l => map.removeLayer(l));
-  railLayers = [];
-
-  railwayLines.forEach(line => {
-    const isHighSpeed = (line.tags.usage === 'main' && line.tags.maxspeed > 160)
-                      || line.tags.highspeed === 'yes';
-    const color  = isHighSpeed ? '#FFD700' : '#F5C518';
-    const weight = isHighSpeed ? 3 : 1.8;
-    const opacity= isHighSpeed ? 0.9 : 0.6;
-
-    const layer = L.polyline(line.coords, {
-      color, weight, opacity, lineJoin:'round', lineCap:'round'
-    }).addTo(map);
-
-    const name = line.tags.name || line.tags['name:tr'] || 'Demiryolu hattı';
-    layer.bindTooltip(name, { sticky:true, className:'rail-tip', opacity:.9 });
-    railLayers.push(layer);
-  });
-}
-
-// ── Load stations ─────────────────────────────────────────────────
-async function loadStations() {
-  const query = `
-    [out:json][timeout:60];
-    area["ISO3166-1"="TR"][admin_level=2]->.tr;
-    (
-      node["railway"="station"](area.tr);
-      node["railway"="halt"](area.tr);
-    );
-    out body;
-  `;
-
-  try {
-    const data = await fetchOverpass(query);
-    stations = [];
-
-    data.elements.forEach(el => {
-      const name = el.tags['name:tr'] || el.tags.name || null;
-      if (name) {
-        stations.push({ name, lat: el.lat, lng: el.lon, id: el.id, tags: el.tags });
-      }
-    });
-
-    stations.sort((a,b) => a.name.localeCompare(b.name, 'tr'));
-
-    drawStationDots();
-    setLoading(false);
-    setStatus(`${stations.length} istasyon yüklendi. Kalkış ve varış seçin.`, 'success');
-  } catch(e) {
-    setLoading(false);
-    setStatus('İstasyonlar alınamadı: ' + e.message, 'error');
-  }
-}
-
-// ── Station dots on map ───────────────────────────────────────────
-function drawStationDots() {
-  stationMarkers.forEach(m => map.removeLayer(m));
-  stationMarkers = [];
-
-  stations.forEach(st => {
-    const circle = L.circleMarker([st.lat, st.lng], {
-      radius: 4, color:'#00B4D8', fillColor:'#00B4D8',
-      fillOpacity:.8, weight:1.5, opacity:.9
-    }).addTo(map);
-    circle.bindTooltip(st.name, { sticky:true, opacity:.9 });
-    stationMarkers.push(circle);
-  });
-}
-
-// ── Autocomplete ──────────────────────────────────────────────────
-function setupAutocomplete(inputId, listId, onSelect) {
-  const input = document.getElementById(inputId);
-  const list  = document.getElementById(listId);
-
-  input.addEventListener('input', () => {
-    const val = input.value.trim().toLowerCase();
-    list.innerHTML = '';
-    if (val.length < 1) { list.classList.remove('open'); return; }
-
-    const matches = stations.filter(s =>
-      s.name.toLowerCase().includes(val) ||
-      (s.tags['name:en']||'').toLowerCase().includes(val)
-    ).slice(0, 12);
-
-    if (!matches.length) { list.classList.remove('open'); return; }
-
-    matches.forEach(st => {
-      const item = document.createElement('div');
-      item.className = 'autocomplete-item';
-      item.innerHTML = `${st.name}`;
-      item.addEventListener('mousedown', e => {
-        e.preventDefault();
-        input.value = st.name;
-        list.classList.remove('open');
-        onSelect(st);
-      });
-      list.appendChild(item);
-    });
-    list.classList.add('open');
-  });
-
-  input.addEventListener('blur', () => setTimeout(()=>list.classList.remove('open'), 150));
-}
-
-// ── Pin markers ───────────────────────────────────────────────────
-const iconA = L.divIcon({ html:'<div style="background:#00B4D8;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px #00B4D8"></div>', className:'', iconAnchor:[7,7] });
-const iconB = L.divIcon({ html:'<div style="background:#FF4D4D;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px #FF4D4D"></div>', className:'', iconAnchor:[7,7] });
-
-function pinA(st) {
-  if (markerA) map.removeLayer(markerA);
-  markerA = L.marker([st.lat, st.lng], {icon:iconA}).addTo(map)
-              .bindPopup(`<b>Kalkış:</b> ${st.name}`).openPopup();
-  selectedA = st;
-  checkReady();
-}
-function pinB(st) {
-  if (markerB) map.removeLayer(markerB);
-  markerB = L.marker([st.lat, st.lng], {icon:iconB}).addTo(map)
-              .bindPopup(`<b>Varış:</b> ${st.name}`).openPopup();
-  selectedB = st;
-  checkReady();
-}
-function checkReady() {
-  btnRoute.disabled = !(selectedA && selectedB);
-}
-
-// ── Route finding ─────────────────────────────────────────────────
-function buildGraph() {
-  const graph = new Map();
-  const keyOf = ([lat,lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`;
-
-  function addEdge(a, b, dist) {
-    const ka = keyOf(a), kb = keyOf(b);
-    if (!graph.has(ka)) graph.set(ka, []);
-    if (!graph.has(kb)) graph.set(kb, []);
-    graph.get(ka).push({ key:kb, dist, coord:b });
-    graph.get(kb).push({ key:ka, dist, coord:a });
-  }
-
-  railwayLines.forEach(line => {
-    for (let i=0; i<line.coords.length-1; i++) {
-      const a=line.coords[i], b=line.coords[i+1];
-      addEdge(a, b, haversine(a,b));
     }
-  });
-  return { graph, keyOf };
-}
+    const path = [];
+    let cur = endKey;
+    while (cur && prev.has(cur)) {
+      const p = prev.get(cur);
+      path.unshift(p.coord);
+      cur = p.key;
+    }
+    if (path.length) path.push(endCoord);
+    return { path, totalDist: dist.get(endKey) || 0 };
+  }
 
-function nearestNode(point) {
-  let best = null, bestD = Infinity;
-  railwayLines.forEach(line => {
-    line.coords.forEach(c => {
-      const d = haversine(point, c);
-      if (d < bestD) { bestD = d; best = c; }
-    });
-  });
-  return best;
-}
+  function drawRoute() {
+    if (!selectedA || !selectedB) return;
+    if (routeLayer) map.removeLayer(routeLayer);
+    statsEl.style.display = 'none';
+    if(gpsWatchId) boxRemTime.style.display = 'none';
+    currentPath = [];
+    setLoading(true); setStatus('Rota hesaplanıyor…');
 
-function dijkstra(graph, keyOf, startCoord, endCoord) {
-  const startKey = keyOf(startCoord);
-  const endKey   = keyOf(endCoord);
+    setTimeout(() => {
+      try {
+        const { graph, keyOf } = buildGraph();
+        
+        // En yakın noktayı bulma
+        let nodeA = null, nodeB = null, minDA = Infinity, minDB = Infinity;
+        railwayLines.forEach(line => {
+          line.coords.forEach(c => {
+            let da = haversine([selectedA.lat, selectedA.lng], c);
+            let db = haversine([selectedB.lat, selectedB.lng], c);
+            if(da < minDA) { minDA = da; nodeA = c; }
+            if(db < minDB) { minDB = db; nodeB = c; }
+          });
+        });
 
-  const dist  = new Map();
-  const prev  = new Map();
-  const visited = new Set();
-  const queue = [{ key:startKey, d:0, coord:startCoord }];
-  dist.set(startKey, 0);
+        if (!nodeA || !nodeB) { setStatus('İstasyonlar hattan çok uzak.', 'error'); setLoading(false); return; }
 
-  let iterations = 0;
-  while (queue.length && iterations++ < 200000) {
-    queue.sort((a,b) => a.d - b.d);
-    const { key, d, coord } = queue.shift();
+        const { path, totalDist } = dijkstra(graph, keyOf, nodeA, nodeB);
+        if (!path.length) { setStatus('Hatlar arasında bağlantı kurulamadı.', 'error'); setLoading(false); return; }
 
-    if (visited.has(key)) continue;
-    visited.add(key);
-
-    if (key === endKey) break;
-
-    const neighbors = graph.get(key) || [];
-    for (const nb of nei
+        currentPath = path;
+        routeLayer = L.polyline(path, { color: '#FF4D4D', weight: 5, opacity: 0.9 }).addTo(map);
+        map.fitBounds(L.latLngBounds([selectedA.lat, selectedA.lng], [selectedB.lat, selectedB.lng]).extend(pat
